@@ -1,0 +1,42 @@
+name: Generate Changelog
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required to get git history
+
+      - name: Get latest tag version
+        id: get_version
+        run: |
+          echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        uses: TriPSs/conventional-changelog-action@v3
+        id: changelog
+        with:
+          version: ${{ steps.get_version.outputs.version }}
+          output: CHANGELOG.md
+          same-file: true  # Prepend to existing changelog
+
+      - name: Commit and Push Changes
+        if: steps.changelog.outputs.changelog_update == 'true'
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: "DIlmurod Yangiboev"
+          author_email: "dilmurod@swiggleit.com"
+          message: "chore: update changelog for ${{ steps.get_version.outputs.version }}"
+          add: CHANGELOG.md
